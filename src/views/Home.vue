@@ -1,18 +1,28 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+    <Modal title="Ator">
+      <FormAtor />
+    </Modal>
+    <Modal title="Classe">
+      <FormClasse />
+    </Modal>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from "@/components/HelloWorld.vue";
-
+import Modal from "@/components/Modal";
+import FormAtor from "@/components/FormAtor";
+import FormClasse from "@/components/FormClasse";
 export default {
   name: "Home",
-  components: {
-    HelloWorld
-  }
+  components: { FormClasse, FormAtor, Modal }
 };
 </script>
+
+<style>
+.home {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+</style>
