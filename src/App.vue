@@ -1,5 +1,17 @@
 <template>
   <div id="app">
+    <md-tabs md-sync-route class="md-primary">
+      <md-tab id="tab-ator" md-label="Ator" to="/ator" />
+      <md-tab id="tab-classe" md-label="Classe" to="/classe" />
+      <md-tab id="tab-diretor" md-label="Diretor" to="/diretor" />
+      <md-tab id="tab-item" md-label="Item" to="/item" />
+      <md-tab id="tab-titulo" md-label="Titulo" to="/titulo" />
+      <md-tab id="tab-socio" md-label="Socio" to="/socio" />
+      <md-tab id="tab-dependente" md-label="Dependente" to="/dependente" />
+      <md-tab id="tab-locacao" md-label="Locacao" to="/locacao" />
+      <md-tab id="tab-devolucao" md-label="Devolucao" to="/devolucao" />
+      <md-tab id="tab-consultas" md-label="Consultas" to="/consultas" />
+    </md-tabs>
     <router-view />
   </div>
 </template>
@@ -21,7 +33,6 @@
 }
 
 body {
-  padding-top: 30px;
   width: 100vw;
   height: 100vh;
   background-position: center;

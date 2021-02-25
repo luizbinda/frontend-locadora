@@ -65,14 +65,14 @@
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
-        Desaja excluir ator <strong>{{ form.nome }}</strong> ?
+        Desaja excluir diretor <strong>{{ form.nome }}</strong> ?
       </md-dialog-title>
       <md-dialog-actions>
         <md-button class="md-primary md-raised" @click="showDialog = false">
-          fechar
+          Close
         </md-button>
         <md-button class="md-accent md-raised" @click="deleteForm">
-          excluir
+          Delete
         </md-button>
       </md-dialog-actions>
     </md-dialog>
@@ -85,10 +85,10 @@ import { required, minLength } from "vuelidate/lib/validators";
 import { api } from "@/api";
 
 export default {
-  name: "FormAtor",
+  name: "FormDiretor",
   mixins: [validationMixin],
   data: () => ({
-    url: "ator",
+    url: "diretor",
     showDialog: false,
     form: {
       id: null,
@@ -171,8 +171,5 @@ export default {
   top: 0;
   right: 0;
   left: 0;
-}
-form {
-  margin-right: 10px;
 }
 </style>

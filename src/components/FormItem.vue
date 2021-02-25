@@ -10,14 +10,48 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('nome')">
-              <label>Nome</label>
-              <md-input v-model="form.nome" :disabled="sending" />
-              <span class="md-error" v-if="!$v.form.nome.required">
-                O campo Nome é obrigatorio!
+            <md-field :class="getValidationClass('numSerie')">
+              <label>Número de Série</label>
+              <md-input v-model="form.numSerie" :disabled="sending" />
+              <span class="md-error" v-if="!$v.form.numSerie.required">
+                O campo Número de Série é obrigatorio!
               </span>
-              <span class="md-error" v-else-if="!$v.form.nome.minlength">
-                campo Nome com carcteres insuficientes!
+            </md-field>
+          </div>
+          <div class="md-layout-item md-small-size-100">
+            <md-field :class="getValidationClass('titulo_id')">
+              <label>Titulo</label>
+              <md-select v-model="form.titulo_id">
+                <md-option
+                  v-for="titulo in titulos"
+                  :key="titulo.id"
+                  :value="titulo.id"
+                  >{{ titulo.nome }}</md-option
+                >
+              </md-select>
+              <span class="md-error" v-if="!$v.form.titulo_id.required">
+                O campo Titulo é obrigatorio!
+              </span>
+            </md-field>
+          </div>
+          <div class="md-layout-item md-small-size-100">
+            <md-datepicker
+              md-immediately
+              v-model="form.data_aquisicao"
+              :class="getValidationClass('data_aquisicao')"
+            >
+              <label>Data de aquisição</label>
+              <span class="md-error" v-if="!$v.form.data_aquisicao.required">
+                A campo Data de aquisição é obrigatorio!
+              </span>
+            </md-datepicker>
+          </div>
+          <div class="md-layout-item md-small-size-100">
+            <md-field :class="getValidationClass('tipo')">
+              <label>Tipo</label>
+              <md-input v-model="form.tipo" :disabled="sending" />
+              <span class="md-error" v-if="!$v.form.tipo.required">
+                O campo Tipo é obrigatorio!
               </span>
             </md-field>
           </div>
@@ -54,25 +88,25 @@
         </md-card-actions>
       </md-card>
       <md-snackbar :md-active.sync="formSaved">
-        Ator {{ form.nome }} foi salvo com sucesso!
+        {{ url }} salvo com sucesso!
       </md-snackbar>
       <md-snackbar :md-active.sync="userDeleted">
-        Ator {{ form.nome }} foi deletado com sucesso!
+        {{ url }} deletado com sucesso!
       </md-snackbar>
       <md-snackbar :md-active.sync="notFound">
-        Ator não encontrado!
+        {{ url }} não encontrado!
       </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
-        Desaja excluir ator <strong>{{ form.nome }}</strong> ?
+        Desaja excluir item ?
       </md-dialog-title>
       <md-dialog-actions>
         <md-button class="md-primary md-raised" @click="showDialog = false">
-          fechar
+          Close
         </md-button>
         <md-button class="md-accent md-raised" @click="deleteForm">
-          excluir
+          Delete
         </md-button>
       </md-dialog-actions>
     </md-dialog>
@@ -85,14 +119,18 @@ import { required, minLength } from "vuelidate/lib/validators";
 import { api } from "@/api";
 
 export default {
-  name: "FormAtor",
+  name: "FormItem",
   mixins: [validationMixin],
   data: () => ({
-    url: "ator",
+    url: "item",
+    titulos: [],
     showDialog: false,
     form: {
       id: null,
-      nome: null
+      numSerie: null,
+      titulo_id: null,
+      tipo: null,
+      data_aquisicao: null
     },
     formSaved: false,
     notFound: false,
@@ -105,10 +143,25 @@ export default {
       id: {
         minLength: minLength(1)
       },
-      nome: {
-        minLength: minLength(3),
+      numSerie: {
+        required
+      },
+      titulo_id: {
+        required
+      },
+      tipo: {
+        required
+      },
+      data_aquisicao: {
         required
       }
+    }
+  },
+  computed: {
+    dataAquisicao() {
+      const newDate = new Date(this.form.data_aquisicao);
+      return `${newDate.getUTCFullYear()}-${newDate.getUTCMonth() +
+        1}-${newDate.getUTCDate()}`;
     }
   },
   methods: {
@@ -129,10 +182,16 @@ export default {
     async saveForm() {
       this.sending = true;
       const metodo = this.form.id ? "put" : "post";
-      const { data } = await api[metodo](`${this.url}`, this.form);
+
+      const resquestData = {
+        ...this.form,
+        data_aquisicao: this.dataAquisicao
+      };
+      console.log(resquestData);
+      const { data } = await api[metodo](`${this.url}`, resquestData);
       this.form = Object.assign(this.form, data);
-      this.formSaved = true;
       this.sending = false;
+      this.formSaved = true;
     },
     async deleteForm() {
       this.sending = true;
@@ -148,6 +207,7 @@ export default {
 
       if (data.id) {
         this.form = Object.assign(this.form, data);
+        this.form.data_aquisicao = new Date(this.form.data_aquisicao);
       } else {
         this.notFound = true;
         this.clearForm();
@@ -161,6 +221,9 @@ export default {
         this.saveForm();
       }
     }
+  },
+  created() {
+    api.get("titulo").then(({ data }) => (this.titulos = data));
   }
 };
 </script>
@@ -171,8 +234,5 @@ export default {
   top: 0;
   right: 0;
   left: 0;
-}
-form {
-  margin-right: 10px;
 }
 </style>

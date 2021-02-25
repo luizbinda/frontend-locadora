@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="md-app-content">
     <form novalidate class="md-layout" @submit.prevent="validateUser">
       <md-card class="md-layout-item">
         <md-card-content>
@@ -91,7 +91,9 @@
       </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
-      <md-dialog-title>Preferences</md-dialog-title>
+      <md-dialog-title>
+        Desaja excluir classe <strong>{{ form.nome }}</strong> ?
+      </md-dialog-title>
       <md-dialog-actions>
         <md-button class="md-primary md-raised" @click="showDialog = false">
           Close
