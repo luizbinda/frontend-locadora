@@ -19,9 +19,9 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('diretor_id')">
+            <md-field :class="getValidationClass('diretor')">
               <label>Diretor</label>
-              <md-select v-model="form.diretor_id">
+              <md-select v-model="form.diretor.id">
                 <md-option
                   v-for="diretor in diretores"
                   :key="diretor.id"
@@ -30,15 +30,15 @@
                   {{ diretor.nome }}
                 </md-option>
               </md-select>
-              <span class="md-error" v-if="!$v.form.diretor_id.required">
+              <span class="md-error" v-if="!$v.form.diretor.required">
                 O campo Titulo é obrigatorio!
               </span>
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('ator_id')">
+            <md-field :class="getValidationClass('atores')">
               <label>Atores</label>
-              <md-select v-model="form.ator_id" multiple>
+              <md-select v-model="form.atores" multiple>
                 <md-option
                   v-for="ator in atores"
                   :key="ator.id"
@@ -47,8 +47,8 @@
                   {{ ator.nome }}
                 </md-option>
               </md-select>
-              <span class="md-error" v-if="!$v.form.ator_id.required">
-                O campo Titulo é obrigatorio!
+              <span class="md-error" v-if="!$v.form.atores.required">
+                O campo Atores é obrigatorio!
               </span>
             </md-field>
           </div>
@@ -83,9 +83,9 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('classe_id')">
+            <md-field :class="getValidationClass('classe')">
               <label>Classes</label>
-              <md-select v-model="form.classe_id">
+              <md-select v-model="form.classe.id">
                 <md-option
                   v-for="classe in classes"
                   :key="classe.id"
@@ -94,8 +94,8 @@
                   {{ classe.nome }}
                 </md-option>
               </md-select>
-              <span class="md-error" v-if="!$v.form.classe_id.required">
-                O campo Titulo é obrigatorio!
+              <span class="md-error" v-if="!$v.form.classe.id.required">
+                O campo Classe é obrigatorio!
               </span>
             </md-field>
           </div>
@@ -137,9 +137,7 @@
       <md-snackbar :md-active.sync="userDeleted">
         {{ url }} deletado com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="notFound">
-        {{ url }} não encontrado!
-      </md-snackbar>
+      <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
@@ -175,9 +173,13 @@ export default {
       id: null,
       ano: null,
       categoria: null,
-      classe_id: null,
-      diretor_id: null,
-      ator_id: null,
+      classe: {
+        id: null
+      },
+      diretor: {
+        id: null
+      },
+      atores: [],
       nome: null,
       sinopse: null
     },
@@ -185,7 +187,7 @@ export default {
     notFound: false,
     userDeleted: false,
     sending: false,
-    lastUser: null
+    formError: null
   }),
   validations: {
     form: {
@@ -198,13 +200,13 @@ export default {
       categoria: {
         required
       },
-      classe_id: {
-        required
+      classe: {
+        id: { required }
       },
-      diretor_id: {
-        required
+      diretor: {
+        id: { required }
       },
-      ator_id: {
+      atores: {
         required
       },
       nome: {
@@ -236,42 +238,71 @@ export default {
       for (let formKey in this.form) {
         this.form[formKey] = null;
       }
+      this.form.classe = {
+        id: null
+      };
+      this.form.diretor = {
+        id: null
+      };
     },
     async saveForm() {
       this.sending = true;
       const metodo = this.form.id ? "put" : "post";
+      let urlRequest = this.url;
+      if (this.form.id) {
+        urlRequest += `/${this.form.id}`;
+      }
 
       const resquestData = {
         ...this.form,
-        ano: this.ano
+        atores: this.form.atores.map(ator => ({ id: ator }))
       };
-      console.log(resquestData);
-      const { data } = await api[metodo](`${this.url}`, resquestData);
-      this.form = Object.assign(this.form, data);
-      this.sending = false;
-      this.formSaved = true;
+      await api[metodo](urlRequest, resquestData)
+        .then(({ data }) => {
+          this.form.id = data.id;
+          this.formSaved = true;
+          this.sending = false;
+        })
+        .catch(() => {
+          this.sending = false;
+        });
     },
     async deleteForm() {
       this.sending = true;
-      await api.delete(`/${this.url}/${this.form.id}`);
-      this.userDeleted = true;
-      this.sending = false;
-      this.clearForm();
-      this.showDialog = false;
+      await api
+        .delete(`/${this.url}/${this.form.id}`)
+        .then(() => {
+          this.userDeleted = true;
+          this.sending = false;
+          this.clearForm();
+          this.showDialog = false;
+        })
+        .catch(error => {
+          this.showDialog = false;
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async getForm() {
       this.sending = true;
-      const { data } = await api.get(`/${this.url}/${this.form.id}`);
-
-      if (data.id) {
-        this.form = Object.assign(this.form, data);
-        this.form.ano = new Date(this.form.ano);
-        this.form.ator_id = data.ator.map(ator => ator.ator_id);
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
+      await api
+        .get(`/${this.url}/${this.form.id}`)
+        .then(({ data }) => {
+          if (data.id) {
+            this.form = Object.assign(this.form, data);
+            this.form.ano = new Date(this.form.ano);
+            this.form.atores = data.atores.map(ator => ator.id);
+          }
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
+    },
+    errorResponse(error) {
+      this.formError = error;
       this.sending = false;
+      this.notFound = true;
+      this.clearForm();
     },
     validateUser() {
       this.$v.$touch();
@@ -284,7 +315,7 @@ export default {
   created() {
     Promise.all([
       api.get("diretor").then(({ data }) => (this.diretores = data)),
-      api.get("ator").then(({ data }) => (this.atores = data)),
+      api.get("atores").then(({ data }) => (this.atores = data)),
       api.get("classe").then(({ data }) => (this.classes = data))
     ]);
   }

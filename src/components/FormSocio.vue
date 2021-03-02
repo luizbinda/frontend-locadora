@@ -37,13 +37,13 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('sexo_id')">
+            <md-field :class="getValidationClass('sexo')">
               <label>Sexo</label>
-              <md-select v-model="form.sexo_id">
+              <md-select v-model="form.sexo">
                 <md-option value="Masculino">Masculino</md-option>
                 <md-option value="Feminino">Feminino</md-option>
               </md-select>
-              <span class="md-error" v-if="!$v.form.sexo_id.required">
+              <span class="md-error" v-if="!$v.form.sexo.required">
                 O campo Sexo é obrigatorio!
               </span>
             </md-field>
@@ -107,9 +107,7 @@
       <md-snackbar :md-active.sync="userDeleted">
         {{ url }} deletado com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="notFound">
-        {{ url }} não encontrado!
-      </md-snackbar>
+      <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
@@ -144,7 +142,7 @@ export default {
       endereco: null,
       id: null,
       nome: null,
-      sexo_id: null,
+      sexo: null,
       telefone: null
     },
     formSaved: false,
@@ -170,7 +168,7 @@ export default {
       endereco: {
         required
       },
-      sexo_id: {
+      sexo: {
         required
       },
       telefone: {
@@ -203,44 +201,54 @@ export default {
     async saveForm() {
       this.sending = true;
       const metodo = this.form.id ? "put" : "post";
-      const resquestData = {
-        ...this.form,
-        data_aquisicao: this.dataAquisicao
-      };
-      if (metodo === "put") {
-        resquestData.sexo = this.form.sexo_id;
+
+      let urlRequest = this.url;
+      if (this.form.id) {
+        urlRequest += `/${this.form.id}`;
       }
-
-      await api[metodo](`${this.url}`, resquestData)
+      await api[metodo](urlRequest, this.form)
         .then(({ data }) => {
-          this.form = Object.assign(this.form, data);
+          this.form.id = data.id;
           this.formSaved = true;
+          this.sending = false;
         })
-        .catch(() => {});
-
-      this.sending = false;
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async deleteForm() {
       this.sending = true;
-      await api.delete(`/${this.url}/${this.form.id}`);
-      this.userDeleted = true;
-      this.sending = false;
-      this.clearForm();
-      this.showDialog = false;
+      await api
+        .delete(`/${this.url}/${this.form.id}`)
+        .then(() => {
+          this.userDeleted = true;
+          this.sending = false;
+          this.clearForm();
+          this.showDialog = false;
+        })
+        .catch(error => {
+          this.showDialog = false;
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async getForm() {
       this.sending = true;
-      const { data } = await api.get(`/${this.url}/${this.form.id}?socio=true`);
-
-      if (data.id) {
-        this.form = Object.assign(this.form, data);
-        this.form.data_nascimento = new Date(this.form.data_nascimento);
-        this.form.sexo_id = data.sexo;
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
+      await api
+        .get(`/${this.url}/${this.form.id}`)
+        .then(({ data }) => {
+          this.form = Object.assign(this.form, data);
+          this.form.data_nascimento = new Date(this.form.data_nascimento);
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
+    },
+    errorResponse(error) {
+      this.formError = error;
       this.sending = false;
+      this.notFound = true;
+      this.clearForm();
     },
     validateUser() {
       this.$v.$touch();

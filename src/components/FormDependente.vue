@@ -19,13 +19,13 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('sexo_id')">
+            <md-field :class="getValidationClass('sexo')">
               <label>Sexo</label>
-              <md-select v-model="form.sexo_id">
+              <md-select v-model="form.sexo">
                 <md-option value="Masculino">Masculino</md-option>
                 <md-option value="Feminino">Feminino</md-option>
               </md-select>
-              <span class="md-error" v-if="!$v.form.sexo_id.required">
+              <span class="md-error" v-if="!$v.form.sexo.required">
                 O campo Sexo é obrigatorio!
               </span>
             </md-field>
@@ -43,9 +43,9 @@
             </md-datepicker>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('cliente_id')">
-              <label>Titulo</label>
-              <md-select v-model="form.cliente_id">
+            <md-field :class="getValidationClass('cliente')">
+              <label>Sócio</label>
+              <md-select v-model="form.cliente.id">
                 <md-option
                   v-for="socio in socios"
                   :key="socio.id"
@@ -53,7 +53,7 @@
                   >{{ socio.nome }}</md-option
                 >
               </md-select>
-              <span class="md-error" v-if="!$v.form.cliente_id.required">
+              <span class="md-error" v-if="!$v.form.cliente.required">
                 O campo Titulo é obrigatorio!
               </span>
             </md-field>
@@ -132,9 +132,9 @@ export default {
       data_nascimento: null,
       id: null,
       nome: null,
-      sexo_id: null,
+      sexo: null,
       telefone: null,
-      cliente_id: null
+      cliente: { id: null }
     },
     formSaved: false,
     notFound: false,
@@ -149,13 +149,13 @@ export default {
       nome: {
         required
       },
-      cliente_id: {
-        required
+      cliente: {
+        id: { required }
       },
       data_nascimento: {
         required
       },
-      sexo_id: {
+      sexo: {
         required
       }
     }
@@ -190,7 +190,7 @@ export default {
         data_aquisicao: this.dataAquisicao
       };
       if (metodo === "put") {
-        resquestData.sexo = this.form.sexo_id;
+        resquestData.sexo = this.form.sexo;
       } else {
         resquestData.socio_id = this.form.cliente_id;
       }
@@ -222,7 +222,7 @@ export default {
       if (data.id) {
         this.form = Object.assign(this.form, data);
         this.form.data_nascimento = new Date(this.form.data_nascimento);
-        this.form.sexo_id = data.sexo;
+        this.form.sexo = data.sexo;
       } else {
         this.notFound = true;
         this.clearForm();

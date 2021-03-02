@@ -1,6 +1,5 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
-import Home from "../views/Home.vue";
 import FormAtor from "@/components/FormAtor.vue";
 import FormDiretor from "@/components/FormDiretor.vue";
 import Consultas from "@/components/Consultas";
@@ -17,8 +16,7 @@ Vue.use(VueRouter);
 const routes = [
   {
     path: "/",
-    name: "Home",
-    component: Home
+    redirect: "/ator"
   },
   {
     path: "/ator",

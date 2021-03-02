@@ -86,9 +86,7 @@
       <md-snackbar :md-active.sync="userDeleted">
         {{ url }} {{ form.nome }} foi deletado com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="notFound">
-        {{ url }} não encontrado!
-      </md-snackbar>
+      <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
@@ -127,7 +125,7 @@ export default {
     notFound: false,
     userDeleted: false,
     sending: false,
-    lastUser: null
+    formError: null
   }),
   validations: {
     form: {
@@ -166,30 +164,51 @@ export default {
     async saveForm() {
       this.sending = true;
       const metodo = this.form.id ? "put" : "post";
-      const { data } = await api[metodo](`${this.url}`, this.form);
-      this.form = Object.assign(this.form, data);
-      this.sending = false;
-      this.formSaved = true;
+      let urlRequest = this.url;
+      if (this.form.id) {
+        urlRequest += `/${this.form.id}`;
+      }
+      await api[metodo](urlRequest, this.form)
+        .then(({ data }) => {
+          this.form.id = data.id;
+          this.formSaved = true;
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async deleteForm() {
       this.sending = true;
-      await api.delete(`/${this.url}/${this.form.id}`);
-      this.userDeleted = true;
-      this.sending = false;
-      this.clearForm();
-      this.showDialog = false;
+      await api
+        .delete(`/${this.url}/${this.form.id}`)
+        .then(() => {
+          this.userDeleted = true;
+          this.sending = false;
+          this.clearForm();
+          this.showDialog = false;
+        })
+        .catch(error => {
+          this.showDialog = false;
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async getForm() {
-      this.sending = true;
-      const { data } = await api.get(`/${this.url}/${this.form.id}`);
-
-      if (data.id) {
-        this.form = Object.assign(this.form, data);
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
+      await api
+        .get(`/${this.url}/${this.form.id}`)
+        .then(({ data }) => {
+          this.form = Object.assign(this.form, data);
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
+    },
+    errorResponse(error) {
+      this.formError = error;
       this.sending = false;
+      this.notFound = true;
+      this.clearForm();
     },
     validateUser() {
       this.$v.$touch();

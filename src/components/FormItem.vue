@@ -19,9 +19,9 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('titulo_id')">
+            <md-field :class="getValidationClass('titulo')">
               <label>Titulo</label>
-              <md-select v-model="form.titulo_id">
+              <md-select v-model="form.titulo.id">
                 <md-option
                   v-for="titulo in titulos"
                   :key="titulo.id"
@@ -29,7 +29,7 @@
                   >{{ titulo.nome }}</md-option
                 >
               </md-select>
-              <span class="md-error" v-if="!$v.form.titulo_id.required">
+              <span class="md-error" v-if="!$v.form.titulo.required">
                 O campo Titulo é obrigatorio!
               </span>
             </md-field>
@@ -93,9 +93,7 @@
       <md-snackbar :md-active.sync="userDeleted">
         {{ url }} deletado com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="notFound">
-        {{ url }} não encontrado!
-      </md-snackbar>
+      <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
@@ -128,7 +126,9 @@ export default {
     form: {
       id: null,
       numSerie: null,
-      titulo_id: null,
+      titulo: {
+        id: null
+      },
       tipo: null,
       data_aquisicao: null
     },
@@ -136,7 +136,7 @@ export default {
     notFound: false,
     userDeleted: false,
     sending: false,
-    lastUser: null
+    formError: null
   }),
   validations: {
     form: {
@@ -146,8 +146,8 @@ export default {
       numSerie: {
         required
       },
-      titulo_id: {
-        required
+      titulo: {
+        id: { required }
       },
       tipo: {
         required
@@ -178,41 +178,66 @@ export default {
       for (let formKey in this.form) {
         this.form[formKey] = null;
       }
+      this.form.titulo = {
+        id: null
+      };
     },
     async saveForm() {
       this.sending = true;
       const metodo = this.form.id ? "put" : "post";
 
+      let urlRequest = this.url;
+      if (this.form.id) {
+        urlRequest += `/${this.form.id}`;
+      }
+
       const resquestData = {
-        ...this.form,
-        data_aquisicao: this.dataAquisicao
+        ...this.form
       };
-      console.log(resquestData);
-      const { data } = await api[metodo](`${this.url}`, resquestData);
-      this.form = Object.assign(this.form, data);
-      this.sending = false;
-      this.formSaved = true;
+      await api[metodo](urlRequest, resquestData)
+        .then(({ data }) => {
+          this.form.id = data.id;
+          this.formSaved = true;
+          this.sending = false;
+        })
+        .catch(error => {
+          this.sending = false;
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async deleteForm() {
       this.sending = true;
-      await api.delete(`/${this.url}/${this.form.id}`);
-      this.userDeleted = true;
-      this.sending = false;
-      this.clearForm();
-      this.showDialog = false;
+      await api
+        .delete(`/${this.url}/${this.form.id}`)
+        .then(() => {
+          this.userDeleted = true;
+          this.sending = false;
+          this.clearForm();
+          this.showDialog = false;
+        })
+        .catch(error => {
+          this.showDialog = false;
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async getForm() {
       this.sending = true;
-      const { data } = await api.get(`/${this.url}/${this.form.id}`);
-
-      if (data.id) {
-        this.form = Object.assign(this.form, data);
-        this.form.data_aquisicao = new Date(this.form.data_aquisicao);
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
+      await api
+        .get(`/${this.url}/${this.form.id}`)
+        .then(({ data }) => {
+          this.form = Object.assign(this.form, data);
+          this.form.data_aquisicao = new Date(this.form.data_aquisicao);
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
+    },
+    errorResponse(error) {
+      this.formError = error;
       this.sending = false;
+      this.notFound = true;
+      this.clearForm();
     },
     validateUser() {
       this.$v.$touch();

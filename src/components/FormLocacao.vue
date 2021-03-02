@@ -10,9 +10,9 @@
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('cliente_id')">
+            <md-field :class="getValidationClass('cliente')">
               <label>Cliente</label>
-              <md-select v-model="form.cliente_id">
+              <md-select v-model="form.cliente.id">
                 <md-option
                   v-for="cliente in clientes"
                   :key="cliente.id"
@@ -20,15 +20,15 @@
                   >{{ cliente.nome }}</md-option
                 >
               </md-select>
-              <span class="md-error" v-if="!$v.form.cliente_id.required">
+              <span class="md-error" v-if="!$v.form.cliente.required">
                 O campo Cliente é obrigatorio!
               </span>
             </md-field>
           </div>
           <div class="md-layout-item md-small-size-100">
-            <md-field :class="getValidationClass('item_id')">
+            <md-field :class="getValidationClass('item')">
               <label>Item</label>
-              <md-select v-model="form.item_id">
+              <md-select v-model="form.item.id">
                 <md-option
                   v-for="item in itens"
                   :key="item.id"
@@ -36,7 +36,7 @@
                   >{{ item.numSerie }}</md-option
                 >
               </md-select>
-              <span class="md-error" v-if="!$v.form.item_id.required">
+              <span class="md-error" v-if="!$v.form.item.required">
                 O campo Item é obrigatorio!
               </span>
             </md-field>
@@ -146,10 +146,10 @@ export default {
     itens: [],
     showDialog: false,
     form: {
-      cliente_id: null,
+      cliente: { id: null },
       data_devolucao_prevista: null,
       id: null,
-      item_id: null,
+      item: { id: null },
       multa: null,
       valor: null
     },
@@ -157,21 +157,21 @@ export default {
     notFound: false,
     userDeleted: false,
     sending: false,
-    lastUser: null
+    formError: null
   }),
   validations: {
     form: {
       id: {
         minLength: minLength(1)
       },
-      cliente_id: {
-        required
+      cliente: {
+        id: { required }
       },
       data_devolucao_prevista: {
         required
       },
-      item_id: {
-        required
+      item: {
+        id: { required }
       },
       multa: {
         required
@@ -207,37 +207,52 @@ export default {
       this.sending = true;
       const metodo = this.form.id ? "put" : "post";
 
-      const resquestData = {
-        ...this.form,
-        data_devolucao_prevista: this.data_devolucao_prevista
-      };
-      const { data } = await api[metodo](`${this.url}`, resquestData);
-      this.form = Object.assign(this.form, data);
-      this.sending = false;
-      this.formSaved = true;
+      let urlRequest = this.url;
+      if (this.form.id) {
+        urlRequest += `/${this.form.id}`;
+      }
+      await api[metodo](urlRequest, this.form)
+        .then(({ data }) => {
+          this.form.id = data.id;
+          this.formSaved = true;
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async deleteForm() {
       this.sending = true;
-      await api.delete(`/${this.url}/${this.form.id}`);
-      this.userDeleted = true;
-      this.sending = false;
-      this.clearForm();
-      this.showDialog = false;
+      await api
+        .delete(`/${this.url}/${this.form.id}`)
+        .then(() => {
+          this.userDeleted = true;
+          this.sending = false;
+          this.clearForm();
+          this.showDialog = false;
+        })
+        .catch(error => {
+          this.showDialog = false;
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
     async getForm() {
       this.sending = true;
-      const { data } = await api.get(`/${this.url}/${this.form.id}`);
-
-      if (data.id) {
-        this.form = Object.assign(this.form, data);
-        this.form.data_devolucao_prevista = new Date(
-          this.form.data_devolucao_prevista
-        );
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
+      await api
+        .get(`/${this.url}/${this.form.id}`)
+        .then(({ data }) => {
+          this.form = Object.assign(this.form, data);
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
+    },
+    errorResponse(error) {
+      this.formError = error;
       this.sending = false;
+      this.notFound = true;
+      this.clearForm();
     },
     validateUser() {
       this.$v.$touch();
