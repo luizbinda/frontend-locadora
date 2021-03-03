@@ -1,6 +1,6 @@
 <template>
   <div class="md-app-content">
-    <form novalidate class="md-layout" @submit.prevent="saveForm">
+    <form novalidate class="md-layout">
       <md-card class="md-layout-item">
         <md-card-content>
           <div class="md-layout-item md-small-size-100">
@@ -18,9 +18,7 @@
       <md-snackbar :md-active.sync="formSaved">
         Item devolvido com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="notFound">
-        {{ url }} não encontrada!
-      </md-snackbar>
+      <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
     <md-card class="md-layout-item" v-if="dadosLocacao">
       <div class="card-cliente">
@@ -40,6 +38,7 @@
       <md-card-actions>
         <md-button
           type="submit"
+          @click="saveForm"
           class="md-primary md-raised"
           :disabled="sending"
           v-if="dadosLocacao"
@@ -70,7 +69,7 @@ export default {
     notFound: false,
     userDeleted: false,
     sending: false,
-    lastUser: null
+    formError: null
   }),
   validations: {
     form: {
@@ -103,47 +102,37 @@ export default {
     },
     async saveForm() {
       this.sending = true;
-      await api.post("devolucao", { id: this.dadosLocacao.id });
+      await api.post("devolucao", this.dadosLocacao);
       this.dadosLocacao = null;
       this.sending = false;
       this.formSaved = true;
     },
-    async deleteForm() {
-      this.sending = true;
-      await api.delete(`/${this.url}/${this.form.id}`);
-      this.userDeleted = true;
-      this.sending = false;
-      this.clearForm();
-      this.showDialog = false;
-    },
     async getItem() {
       this.sending = true;
-      const { data } = await api.get(
-        `/item/${this.form.numSerie}?numSerie=true`
-      );
-
-      if (data.locacao_id) {
-        await api
-          .get(`/${this.url}/${data.locacao_id}`)
-          .then(({ data }) => (this.dadosLocacao = data));
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
-      this.sending = false;
+      await api
+        .get(`/item/numSerie/${this.form.numSerie}`)
+        .then(({ data }) => {
+          if (data.locacao) {
+            this.dadosLocacao = data.locacao.find(
+              locacao => !locacao.data_devolucao_efetiva
+            );
+            if (!this.dadosLocacao) {
+              this.errorResponse("Item não alocado!");
+            }
+          } else {
+            this.errorResponse("Item não alocado!");
+          }
+          this.sending = false;
+        })
+        .catch(error => {
+          this.errorResponse(error.response.data.errors[0]);
+        });
     },
-    async getForm() {
-      this.sending = true;
-      const { data } = await api.get(`/${this.url}/${this.form.id}`);
-
-      if (data.id) {
-        this.form = Object.assign(this.form, data);
-        this.form.data_aquisicao = new Date(this.form.data_aquisicao);
-      } else {
-        this.notFound = true;
-        this.clearForm();
-      }
+    errorResponse(error) {
+      this.formError = error;
       this.sending = false;
+      this.notFound = true;
+      this.clearForm();
     }
   },
   created() {
@@ -164,10 +153,11 @@ export default {
   display: flex;
   align-items: flex-start;
   margin-top: 10px;
-  padding: 5px;
+  padding: 10px 10px 0 10px;
   span {
     font-size: 16px;
     font-weight: bold;
+    padding-right: 10px;
   }
 }
 </style>

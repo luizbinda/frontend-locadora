@@ -112,9 +112,7 @@
       <md-snackbar :md-active.sync="userDeleted">
         {{ url }} deletado com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="notFound">
-        {{ url }} não encontrado!
-      </md-snackbar>
+      <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
     <md-dialog :md-active.sync="showDialog">
       <md-dialog-title>
@@ -181,13 +179,6 @@ export default {
       }
     }
   },
-  computed: {
-    data_devolucao_prevista() {
-      const newDate = new Date(this.form.data_devolucao_prevista);
-      return `${newDate.getUTCFullYear()}-${newDate.getUTCMonth() +
-        1}-${newDate.getUTCDate()}`;
-    }
-  },
   methods: {
     getValidationClass(fieldName) {
       const field = this.$v.form[fieldName];
@@ -201,6 +192,8 @@ export default {
       this.$v.$reset();
       for (let formKey in this.form) {
         this.form[formKey] = null;
+        this.form.cliente = { id: null };
+        this.form.item = { id: null };
       }
     },
     async saveForm() {
@@ -242,6 +235,9 @@ export default {
         .get(`/${this.url}/${this.form.id}`)
         .then(({ data }) => {
           this.form = Object.assign(this.form, data);
+          this.form.data_devolucao_prevista = new Date(
+            data.data_devolucao_prevista
+          );
           this.sending = false;
         })
         .catch(error => {
@@ -256,7 +252,6 @@ export default {
     },
     validateUser() {
       this.$v.$touch();
-
       if (!this.$v.$invalid) {
         this.saveForm();
       }

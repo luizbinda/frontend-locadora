@@ -116,22 +116,23 @@
           <md-table-head>Ano</md-table-head>
           <md-table-head>Diretor</md-table-head>
           <md-table-head>Classe</md-table-head>
-          <md-table-head>Atores</md-table-head>
         </md-table-row>
         <md-table-row>
-          <md-table-head>{{ titulo.nome }}</md-table-head>
-          <md-table-head>{{ titulo.sinopse }}</md-table-head>
-          <md-table-head>{{ titulo.categoria }}</md-table-head>
-          <md-table-head>{{ ano }}</md-table-head>
-          <md-table-head>{{ titulo.diretor.nome }}</md-table-head>
-          <md-table-head>{{ titulo.classe.nome }}</md-table-head>
-          <md-table-cell>
-            <md-table>
-              <md-table-row v-for="ator in titulo.ator" :key="ator.id">
-                <md-table-head>{{ ator.ator.nome }}</md-table-head>
-              </md-table-row>
-            </md-table>
-          </md-table-cell>
+          <md-table-cell>{{ titulo.nome }}</md-table-cell>
+          <md-table-cell>{{ titulo.sinopse }}</md-table-cell>
+          <md-table-cell>{{ titulo.categoria }}</md-table-cell>
+          <md-table-cell>{{ ano }}</md-table-cell>
+          <md-table-cell>{{ titulo.diretor.nome }}</md-table-cell>
+          <md-table-cell>{{ titulo.classe.nome }}</md-table-cell>
+        </md-table-row>
+      </md-table>
+      <md-table md-card>
+        <md-table-toolbar>Atores Titulo</md-table-toolbar>
+        <md-table-row>
+          <md-table-head>Nome</md-table-head>
+        </md-table-row>
+        <md-table-row v-for="ator in titulo.atores" :key="ator.id">
+          <md-table-cell>{{ ator.nome }}</md-table-cell>
         </md-table-row>
       </md-table>
     </div>
@@ -230,11 +231,11 @@ export default {
       this.sending = true;
       if (this.isCategoria) {
         await api
-          .get(`/${this.url}?categoria=${this.form.categoria}`)
+          .get(`/${this.url}/categoria/${this.form.categoria}`)
           .then(({ data }) => (this.titulos = data));
       } else if (this.isAtor) {
         await api
-          .get(`/${this.url}?ator=${this.form.ator_id}`)
+          .get(`/${this.url}/ator/${this.form.ator_id}`)
           .then(({ data }) => (this.titulos = data));
       } else {
         await api.get(this.url).then(({ data }) => (this.titulos = data));
@@ -252,7 +253,7 @@ export default {
   },
   created() {
     Promise.all([
-      api.get(`/ator`).then(({ data }) => (this.atores = data)),
+      api.get(`/atores`).then(({ data }) => (this.atores = data)),
       api.get(this.url).then(({ data }) => (this.titulos = data))
     ]);
   },
@@ -295,5 +296,12 @@ export default {
 
 form {
   margin-bottom: 10px;
+}
+
+.md-table .md-table-head {
+  text-align: left;
+}
+.md-table .md-table-cell {
+  text-align: left;
 }
 </style>
