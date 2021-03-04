@@ -1,5 +1,12 @@
 <template>
   <div class="md-app-content">
+    <TableForm
+      class="margin"
+      :dadosForm="atores"
+      nome-form="atores"
+      @enviarDados="receberDados"
+      @clearForm="clearForm"
+    />
     <form novalidate class="md-layout" @submit.prevent="validateUser">
       <md-card class="md-layout-item">
         <md-card-content>
@@ -22,28 +29,8 @@
             </md-field>
           </div>
         </md-card-content>
-
         <md-progress-bar md-mode="indeterminate" v-if="sending" />
-
         <md-card-actions>
-          <md-button
-            type="button"
-            @click="showDialog = true"
-            class="md-accent md-raised"
-            :disabled="sending"
-            v-if="form.id"
-          >
-            deletar
-          </md-button>
-          <md-button
-            type="button"
-            @click="getForm"
-            class="md-primary md-raised"
-            :disabled="sending"
-            v-if="form.id"
-          >
-            buscar
-          </md-button>
           <md-button
             type="submit"
             class="md-primary md-raised"
@@ -56,24 +43,8 @@
       <md-snackbar :md-active.sync="formSaved">
         Ator {{ form.nome }} foi salvo com sucesso!
       </md-snackbar>
-      <md-snackbar :md-active.sync="userDeleted">
-        Ator {{ form.nome }} foi deletado com sucesso!
-      </md-snackbar>
       <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
-    <md-dialog :md-active.sync="showDialog">
-      <md-dialog-title>
-        Desaja excluir ator <strong>{{ form.nome }}</strong> ?
-      </md-dialog-title>
-      <md-dialog-actions>
-        <md-button class="md-primary md-raised" @click="showDialog = false">
-          fechar
-        </md-button>
-        <md-button class="md-accent md-raised" @click="deleteForm">
-          excluir
-        </md-button>
-      </md-dialog-actions>
-    </md-dialog>
   </div>
 </template>
 
@@ -81,12 +52,15 @@
 import { validationMixin } from "vuelidate";
 import { required, minLength } from "vuelidate/lib/validators";
 import { api } from "@/api";
+import TableForm from "@/components/TableForm";
 
 export default {
   name: "FormAtor",
+  components: { TableForm },
   mixins: [validationMixin],
   data: () => ({
     url: "atores",
+    atores: [],
     showDialog: false,
     form: {
       id: null,
@@ -94,7 +68,6 @@ export default {
     },
     formSaved: false,
     notFound: false,
-    userDeleted: false,
     sending: false,
     formError: null
   }),
@@ -110,6 +83,9 @@ export default {
     }
   },
   methods: {
+    receberDados(dados) {
+      this.form = Object.assign({}, dados);
+    },
     getValidationClass(fieldName) {
       const field = this.$v.form[fieldName];
       if (field) {
@@ -118,11 +94,13 @@ export default {
         };
       }
     },
-    clearForm() {
+    clearForm(id) {
       this.$v.$reset();
       for (let formKey in this.form) {
         this.form[formKey] = null;
       }
+      const index = this[this.url].findIndex(elemnt => elemnt.id === id);
+      this[this.url].splice(index, 1);
     },
     async saveForm() {
       this.sending = true;
@@ -136,33 +114,7 @@ export default {
         .then(({ data }) => {
           this.form.id = data.id;
           this.formSaved = true;
-          this.sending = false;
-        })
-        .catch(error => {
-          this.errorResponse(error.response.data.errors[0]);
-        });
-    },
-    async deleteForm() {
-      this.sending = true;
-      await api
-        .delete(`/${this.url}/${this.form.id}`)
-        .then(() => {
-          this.userDeleted = true;
-          this.sending = false;
-          this.clearForm();
-          this.showDialog = false;
-        })
-        .catch(error => {
-          this.showDialog = false;
-          this.errorResponse(error.response.data.errors[0]);
-        });
-    },
-    async getForm() {
-      this.sending = true;
-      await api
-        .get(`/${this.url}/${this.form.id}`)
-        .then(({ data }) => {
-          this.form = Object.assign(this.form, data);
+          api.get(this.url).then(({ data }) => (this[this.url] = data));
           this.sending = false;
         })
         .catch(error => {
@@ -181,6 +133,9 @@ export default {
         this.saveForm();
       }
     }
+  },
+  created() {
+    api.get(this.url).then(({ data }) => (this[this.url] = data));
   }
 };
 </script>

@@ -1,5 +1,11 @@
 <template>
   <div class="md-app-content">
+    <TableForm
+      class="margin"
+      :dadosForm="diretor"
+      nome-form="diretor"
+      @enviarDados="receberDados"
+    />
     <form novalidate class="md-layout" @submit.prevent="validateUser">
       <md-card class="md-layout-item">
         <md-card-content>
@@ -27,24 +33,6 @@
 
         <md-card-actions>
           <md-button
-            type="button"
-            @click="showDialog = true"
-            class="md-accent md-raised"
-            :disabled="sending"
-            v-if="form.id"
-          >
-            deletar
-          </md-button>
-          <md-button
-            type="button"
-            @click="getForm"
-            class="md-primary md-raised"
-            :disabled="sending"
-            v-if="form.id"
-          >
-            buscar
-          </md-button>
-          <md-button
             type="submit"
             class="md-primary md-raised"
             :disabled="sending"
@@ -61,19 +49,6 @@
       </md-snackbar>
       <md-snackbar :md-active.sync="notFound"> {{ formError }} </md-snackbar>
     </form>
-    <md-dialog :md-active.sync="showDialog">
-      <md-dialog-title>
-        Desaja excluir diretor <strong>{{ form.nome }}</strong> ?
-      </md-dialog-title>
-      <md-dialog-actions>
-        <md-button class="md-primary md-raised" @click="showDialog = false">
-          Close
-        </md-button>
-        <md-button class="md-accent md-raised" @click="deleteForm">
-          Delete
-        </md-button>
-      </md-dialog-actions>
-    </md-dialog>
   </div>
 </template>
 
@@ -81,12 +56,15 @@
 import { validationMixin } from "vuelidate";
 import { required, minLength } from "vuelidate/lib/validators";
 import { api } from "@/api";
+import TableForm from "@/components/TableForm";
 
 export default {
   name: "FormDiretor",
+  components: { TableForm },
   mixins: [validationMixin],
   data: () => ({
     url: "diretor",
+    diretor: [],
     showDialog: false,
     form: {
       id: null,
@@ -110,6 +88,9 @@ export default {
     }
   },
   methods: {
+    receberDados(dados) {
+      this.form = Object.assign({}, dados);
+    },
     getValidationClass(fieldName) {
       const field = this.$v.form[fieldName];
       if (field) {
@@ -118,11 +99,13 @@ export default {
         };
       }
     },
-    clearForm() {
+    clearForm(id) {
       this.$v.$reset();
       for (let formKey in this.form) {
         this.form[formKey] = null;
       }
+      const index = this[this.url].findIndex(elemnt => elemnt.id === id);
+      this[this.url].splice(index, 1);
     },
     async saveForm() {
       this.sending = true;
@@ -136,33 +119,7 @@ export default {
         .then(({ data }) => {
           this.form.id = data.id;
           this.formSaved = true;
-          this.sending = false;
-        })
-        .catch(error => {
-          this.errorResponse(error.response.data.errors[0]);
-        });
-    },
-    async deleteForm() {
-      this.sending = true;
-      await api
-        .delete(`/${this.url}/${this.form.id}`)
-        .then(() => {
-          this.userDeleted = true;
-          this.sending = false;
-          this.clearForm();
-          this.showDialog = false;
-        })
-        .catch(error => {
-          this.showDialog = false;
-          this.errorResponse(error.response.data.errors[0]);
-        });
-    },
-    async getForm() {
-      this.sending = true;
-      await api
-        .get(`/${this.url}/${this.form.id}`)
-        .then(({ data }) => {
-          this.form = Object.assign(this.form, data);
+          api.get(this.url).then(({ data }) => (this.classes = data));
           this.sending = false;
         })
         .catch(error => {
@@ -182,6 +139,9 @@ export default {
         this.saveForm();
       }
     }
+  },
+  created() {
+    api.get(this.url).then(({ data }) => (this[this.url] = data));
   }
 };
 </script>

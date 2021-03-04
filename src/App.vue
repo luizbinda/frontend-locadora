@@ -33,11 +33,22 @@
 }
 
 body {
-  width: 100vw;
+  width: 100vw - calc(100vw - 100%);
   height: 100vh;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
   background-image: url("https://static.alphacoders.com/thumbs_categories/20.jpg");
+}
+
+.margin {
+  margin-bottom: 15px;
+}
+
+.md-table .md-table-head {
+  text-align: left;
+}
+.md-table .md-table-cell {
+  text-align: left;
 }
 </style>

@@ -297,11 +297,4 @@ export default {
 form {
   margin-bottom: 10px;
 }
-
-.md-table .md-table-head {
-  text-align: left;
-}
-.md-table .md-table-cell {
-  text-align: left;
-}
 </style>
